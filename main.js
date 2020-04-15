@@ -12,16 +12,23 @@ const users = [
   { id: 8, name: 'User 8', age: 20 },
   { id: 9, name: 'User 9', age: 20 },
 ]
-app.get('/users', (req, res) => {
-  const page = parseInt(req.query.page)
-  const limit = parseInt(req.query.limit)
-  const results = {}
-  const startIndex = (page - 1) * limit
-  const endIndex = page * limit
-  results.users = users.slice(startIndex, endIndex)
-  if (startIndex > 0) results.prev = { page: page - 1, limit }
-  if (endIndex < users.length) results.next = { page: page + 1, limit }
-  res.json(results)
-})
 
+app.get('/users', paginate(users), (req, res, next) => {
+  res.json(req.paginateResults)
+})
+// Pagination using middleware
+function paginate(model) {
+  return (req, res, next) => {
+    const results = {}
+    const page = req.query.page
+    const limit = req.query.limit
+    const startIndex = (page - 1) * limit
+    const endIndex = page * limit
+    results.model = model.slice(startIndex, endIndex)
+    if (startIndex > 0) results.prev = { page: page + 1, limit }
+    if (endIndex < users.length) results.next = { page: page + 1, limit }
+    req.paginateResults = results
+    next()
+  }
+}
 app.listen(5000, () => console.log('Server started'))
